@@ -20,10 +20,9 @@ import (
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
 )
 
-const ()
-
 var (
 	bought       = false
+	purchasing   = false
 	lastNotify   = time.Now().Add(-24 * time.Hour)
 	chatID       = os.Getenv("CHAT_ID")
 	webhook      = os.Getenv("WEBHOOK")
@@ -106,7 +105,7 @@ func queryBundles(ctx context.Context) {
 		key := fmt.Sprintf("%s-%dC%dG", bundle.BundleTypeDescription, bundle.CPU, bundle.Memory)
 		log.Printf("%s: %s\n", key, bundle.BundleSalesState)
 		bundles[key] = bundle.BundleSalesState
-		if !bought && bundle.BundleSalesState != "SOLD_OUT" {
+		if !bought && !purchasing && bundle.BundleSalesState != "SOLD_OUT" {
 			createInstance(bundle)
 			break
 		}
@@ -117,6 +116,10 @@ func queryBundles(ctx context.Context) {
 }
 
 func createInstance(bundle Bundle) {
+	purchasing = true
+	defer func() {
+		purchasing = false
+	}()
 	client := createClient()
 	request := tchttp.NewCommonRequest("lighthouse", "2020-03-24", "CreateInstances")
 	// bundleID := "bundle_rs_nmc_lin_med1_02"

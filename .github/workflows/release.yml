@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24.4'
+
+    - name: Build binaries
+      run: |
+        mkdir -p dist
+        
+        # Build for linux amd64
+        GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/lhbot-linux-amd64 .
+        
+        # Build for linux arm64
+        GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/lhbot-linux-arm64 .
+        
+        # Create checksums
+        cd dist
+        sha256sum lhbot-linux-* > checksums.txt
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: Release ${{ github.ref_name }}
+        body: |
+          ## 🚀 Release ${{ github.ref_name }}
+          
+          Automated release for LightHouse Razor Bot version ${{ github.ref_name }}.
+          
+          ### 📦 Binaries
+          
+          - **lhbot-linux-amd64** - Linux AMD64
+          - **lhbot-linux-arm64** - Linux ARM64
+          
+          ### 🔧 Usage
+          
+          1. Download the appropriate binary for your system
+          2. Make it executable: `chmod +x lhbot-*`
+          3. Configure environment variables as described in README.md
+          4. Run: `./lhbot-*`
+          
+          ### 📋 Checksums
+          
+          See `checksums.txt` for SHA256 checksums of all binaries.
+          
+          ### 📚 Documentation
+          
+          Full setup instructions are available in the [README.md](README.md)
+        files: |
+          dist/lhbot-linux-amd64
+          dist/lhbot-linux-arm64
+          dist/checksums.txt
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

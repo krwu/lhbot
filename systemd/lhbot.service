@@ -1,0 +1,26 @@
+[Unit]
+Description=LightHouse Razor Bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# 环境变量，参见 .env.example
+EnvironmentFile=%h/.config/lhbot.env
+# 使用绝对路径，避免 $PATH 问题
+ExecStart=%h/.local/bin/lhbot
+
+# 标准输出/错误重定向到指定文件
+StandardOutput=append:/var/log/lhbot.log
+StandardError=append:/var/log/lhbot.log
+
+# 崩溃时自动重启，30 秒内最多重启 3 次
+Restart=on-failure
+RestartSec=5s
+StartLimitIntervalSec=30
+StartLimitBurst=3
+
+# 用户级服务无需再写 User= 字段（由 systemd --user 决定）
+
+[Install]
+WantedBy=default.target

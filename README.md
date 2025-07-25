@@ -1,52 +1,50 @@
-# LightHouse Razor Bot (LHBot)
+# Lighthouse Instance Monitor (LHBot)
 
-A lightweight Go bot that monitors Tencent Cloud Lighthouse instance availability and automatically purchases instances when stock becomes available.
+A lightweight Go bot to monitor Tencent Cloud Lighthouse instance availability and automatically purchase them when they're back in stock.
 
 ## 🎯 Purpose
 
-This bot continuously monitors specific Tencent Cloud Lighthouse bundle availability (particularly "锐驰" series) and:
-- Automatically purchases instances when stock becomes available
-- Sends notifications via WeChat Work webhooks about stock status
-- Provides periodic monitoring reports
+This bot continuously monitors the availability of specific Tencent Cloud Lighthouse instance types (especially the "锐驰" series) and performs the following actions:
+- Automatically purchases an instance when it becomes available.
+- Sends real-time status notifications via WeChat Work webhooks.
+- Provides periodic monitoring reports.
 
 ## 🚀 Features
 
-- **Real-time monitoring**: Checks bundle availability every 30 seconds
-- **Auto-purchase**: Automatically creates instances when stock is detected
-- **Smart notifications**: 
-  - Immediate notifications when stock becomes available (with @user mention)
-  - Hourly heartbeat notifications when all bundles are sold out
-  - Purchase confirmations
-- **Anti-repurchase protection**: Prevents duplicate purchases after service restart
-- **Graceful shutdown**: Handles SIGINT/SIGTERM signals properly
-- **Cross-platform**: Supports Linux AMD64 and ARM64 architectures
+- **Continuous Monitoring**: Checks instance availability every 30 seconds.
+- **Auto-Purchase**: Automatically creates an instance when stock is detected.
+- **Intelligent Notifications**: 
+  - Immediate alert when an instance is back in stock (with @user mention).
+  - Hourly heartbeat notifications if all instances are sold out.
+  - Purchase confirmation alerts.
+- **Duplicate Purchase Prevention**: Prevents re-purchasing the same instance type after a service restart.
+- **Graceful Shutdown**: Handles SIGINT/SIGTERM signals correctly for safe termination.
+- **Cross-Platform Support**: Pre-built binaries for Linux AMD64 and ARM64.
 
 ## 📋 Prerequisites
 
-- **Tencent Cloud Account** with Lighthouse service enabled
-- **API Credentials**: Tencent Cloud SecretId and SecretKey
-- **WeChat Work** webhook URL and chat ID for notifications
-- **Go 1.24.4** or later for building from source
+- A Tencent Cloud account with the Lighthouse service activated.
+- Tencent Cloud API Credentials (SecretId and SecretKey).
+- A WeChat Work webhook URL for notifications.
+- Go 1.24.4 or later (if building from source).
 
 ## 🔧 Configuration
 
-### Environment Variables
-
-Create a configuration file at `~/.config/lhbot.env`:
+Create a configuration file at `~/.config/lhbot.env` with the following environment variables:
 
 ```bash
 # Tencent Cloud Credentials
-CLIENT_ID=your_tencent_secret_id
-CLIENT_SECRET=your_tencent_secret_key
+CLIENT_ID="your_tencent_secret_id"
+CLIENT_SECRET="your_tencent_secret_key"
 
 # WeChat Work Notifications
-WEBHOOK=https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=your_webhook_key
-CHAT_ID=your_chat_id
+WEBHOOK="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=your_webhook_key"
+CHAT_ID="your_chat_id"
 
-# Optional: Root password for created instances (default: admin@2025)
-ROOT_PASSWORD=your_secure_password
+# Optional: Root password for new instances (default: admin@2025)
+ROOT_PASSWORD="your_secure_password"
 
-# Optional: mention specific user (default `@all` mention all users in the group)
+# Optional: Mention a specific user ID (defaults to @all to notify everyone)
 MENTIONED_USERID="your_user_id"
 ```
 
@@ -59,207 +57,206 @@ MENTIONED_USERID="your_user_id"
 git clone <repository-url>
 cd lhbot
 
-# Build for current platform
+# Build for the current platform
 go build -o lhbot .
 
-# Build for all supported platforms (Linux AMD64/ARM64)
+# Cross-compile for all supported platforms (Linux AMD64/ARM64)
 ./make.ps1 -Platform all
 ```
 
 ### Pre-built Binaries
 
-You can also download pre-built binaries from [releases](https://github.com/krwu/lhbot/releases):
+You can also download pre-built binaries from the [Releases](https://github.com/krwu/lhbot/releases) page:
 
-- `lhbot_linux-amd64` - Linux AMD64
-- `lhbot_linux-arm64` - Linux ARM64
+- `lhbot_linux-amd64`
+- `lhbot_linux-arm64`
 
 ## 🔧 Installation & Deployment
 
-### 1. Binary Installation
+### 1. Install the Binary
 
 ```bash
-# Create local bin directory
+# Create a local bin directory
 mkdir -p ~/.local/bin
 
-# Copy binary
+# Copy the binary to the local bin directory
 cp bin/lhbot_linux-amd64 ~/.local/bin/lhbot
 chmod +x ~/.local/bin/lhbot
 
-# Create config directory
+# Create the configuration directory
 mkdir -p ~/.config
 ```
 
-### 2. User-Level systemd Service
+### 2. Run as a User-Level systemd Service
 
-#### Setup Service
+#### Service Setup
 
 ```bash
-# Copy systemd service file
+# Copy the systemd service file to the user's config directory
 cp systemd/lhbot.service ~/.config/systemd/user/
 
-# Enable linger to keep service running after user logout
+# Enable linger to ensure the service continues running after you log out
 loginctl enable-linger $USER
 
-# Reload systemd user daemon
+# Reload the systemd user daemon
 systemctl --user daemon-reload
 
-# Enable service to start at boot
+# Enable the service to start on boot
 systemctl --user enable lhbot.service
 
-# Start the service
+# Start the service now
 systemctl --user start lhbot.service
 
-# Check service status
+# Check the service status
 systemctl --user status lhbot.service
 ```
 
 #### View Logs
 
 ```bash
-# Real-time logs
+# View real-time logs
 journalctl --user -f -u lhbot.service
 
-# Recent logs
+# View logs from the past hour
 journalctl --user -u lhbot.service --since "1 hour ago"
 ```
 
 #### Service Management
 
 ```bash
-# Stop service
+# Stop the service
 systemctl --user stop lhbot.service
 
-# Restart service
+# Restart the service
 systemctl --user restart lhbot.service
 
-# Disable service
+# Disable the service
 systemctl --user disable lhbot.service
 ```
 
 ### 3. Manual Execution
 
 ```bash
-# Load environment variables
+# Load environment variables from your config file
 source ~/.config/lhbot.env
 
-# Run directly
+# Run the bot directly
 ~/.local/bin/lhbot
 ```
 
 ## 📊 Monitoring & Notifications
 
+The bot sends notifications in Chinese via WeChat Work.
+
 ### Notification Types
 
-1. **Stock Available** (Immediate)
-   ```
-   ⚠️ **发现可用套餐**
-   - **锐驰-2C4G**: AVAILABLE
-   - **锐驰-4C8G**: SOLD_OUT
-   
-   **通知时间**：2025-07-25 21:15:00
-   ```
-   *自动 @kaireewu 提及*
+1.  **Stock Available** (Immediate)
+    > ⚠️ **发现可用套餐**
+    > - **锐驰-2C1G**: AVAILABLE
+    > - **锐驰-2C2G**: SOLD_OUT
+    >
+    > **通知时间**：2025-07-25 21:15:00
+    >
+    > *Mentions the specified user (e.g., @kairee)*
 
-2. **Heartbeat** (Hourly, when all sold out)
-   ```
-   ⚙️ **监控服务运行中**
-   - **锐驰-2C4G**: SOLD_OUT
-   - **锐驰-4C8G**: SOLD_OUT
-   
-   **通知时间**：2025-07-25 21:00:00
-   ```
+2.  **Heartbeat** (Hourly, when all instances are sold out)
+    > ⚙️ **监控服务运行中**
+    > - **锐驰-2C1G**: SOLD_OUT
+    > - **锐驰-2C2G**: SOLD_OUT
+    >
+    > **通知时间**：2025-07-25 21:00:00
 
-3. **Purchase Confirmation**
-   ```
-   ✅ **锐驰自动购买成功**
-   - **型号**: 锐驰-4C8G
-   
-   **通知时间**：2025-07-25 21:16:30
-   ```
+3.  **Purchase Confirmation**
+    > ✅ **锐驰自动购买成功**
+    > - **型号**: 锐驰-2C2G
+    >
+    > **通知时间**：2025-07-25 21:16:30
 
-### Anti-Repurchase Mechanism
+### Duplicate Purchase Prevention
 
-The bot uses a file-based lock mechanism to prevent duplicate purchases:
+The bot creates a lock file to prevent duplicate purchases, even if the service restarts.
 
-- **Lock file**: `~/lhbot-bought.lock`
-- **Purpose**: Persists purchase state across service restarts
-- **Behavior**: Once created, the bot will skip auto-purchase even after restart
+- **Lock File**: `~/lhbot-bought.lock`
+- **Purpose**: To persist the purchase status across restarts.
+- **Behavior**: If `~/lhbot-bought.lock` exists, the auto-purchase function will be disabled.
 
-## ⚙️ Configuration Files
+## ⚙️ systemd Configuration
 
-### systemd Service File
-Located at `~/.config/systemd/user/lhbot.service`
+The user-level service is defined in `~/.config/systemd/user/lhbot.service`.
 
-Key configurations:
-- **EnvironmentFile**: `~/.config/lhbot.env`
-- **ExecStart**: `~/.local/bin/lhbot`
-- **Restart**: Auto-restart on failure (max 3 times in 30 seconds)
-- **Logging**: Output `/var/log/lhbot.log`
+Key directives:
+- **EnvironmentFile**: Loads configuration from `~/.config/lhbot.env`.
+- **ExecStart**: Specifies the command to run: `~/.local/bin/lhbot`.
+- **Restart**: Automatically restarts the service on failure.
+- **Logging**: Standard output and error are captured by the systemd journal, viewable with `journalctl`.
 
 ## 🔍 Troubleshooting
 
 ### Common Issues
 
-**Service stops after logout:**
+**Service stops after user logs out:**
+Enable linger for your user to allow services to run in the background.
 ```bash
-# Enable linger to keep user services running
 loginctl enable-linger $USER
 ```
 
-**Service won't start:**
+**Service fails to start:**
 ```bash
-# Check service status
+# Check the service status for errors
 systemctl --user status lhbot.service
 
 # View detailed logs
 journalctl --user -u lhbot.service --no-pager
 
-# Check binary permissions
+# Verify the binary has execute permissions
 ls -la ~/.local/bin/lhbot
 ```
 
-**API authentication errors:**
-- Verify `CLIENT_ID` and `CLIENT_SECRET` are correct
-- Check Tencent Cloud API permissions
+**API Authentication Errors:**
+- Ensure `CLIENT_ID` and `CLIENT_SECRET` in `~/.config/lhbot.env` are correct.
+- Confirm the API key has the necessary permissions in the Tencent Cloud console.
 
-**Webhook notifications failing:**
-- Verify `WEBHOOK` URL is accessible
-- Check `CHAT_ID` configuration
+**Webhook Notification Failures:**
+- Verify the `WEBHOOK` URL is correct and accessible.
+- Check the `CHAT_ID` configuration.
 
 ### Debug Mode
 
+To run the bot with verbose logging for debugging:
 ```bash
-# Run with debug output
+# Load environment variables
 source ~/.config/lhbot.env
+
+# Run the bot and pipe output to a log file
 ~/.local/bin/lhbot 2>&1 | tee debug.log
 ```
 
-## 🛡️ Security Notes
+## 🛡️ Security Best Practices
 
-- Never commit API credentials to version control
-- Use environment variables for sensitive configuration
-- Regularly rotate Tencent Cloud API keys
-- Monitor logs for security events: `journalctl --user -u lhbot.service` OR `tail -f /var/log/lhbot.log`
+- **Never commit secrets**: Do not commit API credentials or other secrets to version control.
+- **Use environment variables**: Store sensitive data in environment variables, not in the code.
+- **Rotate keys**: Regularly rotate your Tencent Cloud API keys.
+- **Monitor logs**: Check logs for suspicious activity: `journalctl --user -u lhbot.service`.
 
 ## 📄 Recent Updates
 
 ### v1.1.0 (2025-07-25)
-- **Enhanced notification logic**: Immediate notifications for stock availability with @kaireewu mention
-- **Anti-repurchase protection**: File-based lock mechanism prevents duplicate purchases after service restart
-- **Improved error handling**: Better logging for CreateInstances API failures
-- **User systemd service fix**: Added `loginctl enable-linger` requirement for persistent user services
+- **Enhanced Notifications**: Added immediate alerts for stock availability with user mentions.
+- **Duplicate Purchase Prevention**: Implemented a file-based lock to avoid re-purchasing after a restart.
+- **Improved Error Handling**: Added more detailed logging for `CreateInstances` API failures.
+- **Systemd Service Fix**: Documented the `loginctl enable-linger` requirement for persistent user services.
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+1.  Fork the repository.
+2.  Create your feature branch.
+3.  Commit your changes.
+4.  Ensure your changes are well-tested.
+5.  Submit a pull request.
 
 ## 📞 Support
 
-For issues and questions:
-- Check the troubleshooting section
-- Review system logs: `journalctl --user -u lhbot.service`
-- Open an issue in the repository
+If you encounter issues:
+- Review the troubleshooting section.
+- Check the system logs: `journalctl --user -u lhbot.service`.
+- Open an issue on GitHub.

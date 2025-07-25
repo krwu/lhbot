@@ -13,7 +13,11 @@ This bot continuously monitors specific Tencent Cloud Lighthouse bundle availabi
 
 - **Real-time monitoring**: Checks bundle availability every 30 seconds
 - **Auto-purchase**: Automatically creates instances when stock is detected
-- **Smart notifications**: Sends hourly status updates and purchase confirmations
+- **Smart notifications**: 
+  - Immediate notifications when stock becomes available (with @user mention)
+  - Hourly heartbeat notifications when all bundles are sold out
+  - Purchase confirmations
+- **Anti-repurchase protection**: Prevents duplicate purchases after service restart
 - **Graceful shutdown**: Handles SIGINT/SIGTERM signals properly
 - **Cross-platform**: Supports Linux AMD64 and ARM64 architectures
 
@@ -41,6 +45,9 @@ CHAT_ID=your_chat_id
 
 # Optional: Root password for created instances (default: admin@2025)
 ROOT_PASSWORD=your_secure_password
+
+# Optional: mention specific user (default `@all` mention all users in the group)
+MENTIONED_USERID="your_user_id"
 ```
 
 ## 🏗️ Building
@@ -61,7 +68,8 @@ go build -o lhbot .
 
 ### Pre-built Binaries
 
-Pre-compiled binaries are available in the `bin/` directory:
+You can also download pre-built binaries from [releases](https://github.com/krwu/lhbot/releases):
+
 - `lhbot_linux-amd64` - Linux AMD64
 - `lhbot_linux-arm64` - Linux ARM64
 
@@ -88,6 +96,9 @@ mkdir -p ~/.config
 ```bash
 # Copy systemd service file
 cp systemd/lhbot.service ~/.config/systemd/user/
+
+# Enable linger to keep service running after user logout
+loginctl enable-linger $USER
 
 # Reload systemd user daemon
 systemctl --user daemon-reload
@@ -135,26 +146,44 @@ source ~/.config/lhbot.env
 ~/.local/bin/lhbot
 ```
 
-## 📊 Monitoring
+## 📊 Monitoring & Notifications
 
-The bot provides two types of notifications:
+### Notification Types
 
-### Status Reports (Hourly)
-```
-⚙️ **监控服务运行中**
-- **锐驰-2C4G**: SOLD_OUT
-- **锐驰-4C8G**: AVAILABLE
+1. **Stock Available** (Immediate)
+   ```
+   ⚠️ **发现可用套餐**
+   - **锐驰-2C4G**: AVAILABLE
+   - **锐驰-4C8G**: SOLD_OUT
+   
+   **通知时间**：2025-07-25 21:15:00
+   ```
+   *自动 @kaireewu 提及*
 
-**通知时间**：2025-07-24 10:30:00
-```
+2. **Heartbeat** (Hourly, when all sold out)
+   ```
+   ⚙️ **监控服务运行中**
+   - **锐驰-2C4G**: SOLD_OUT
+   - **锐驰-4C8G**: SOLD_OUT
+   
+   **通知时间**：2025-07-25 21:00:00
+   ```
 
-### Purchase Confirmations
-```
-✅ **锐驰自动购买成功**
-- **型号**: 锐驰-4C8G
+3. **Purchase Confirmation**
+   ```
+   ✅ **锐驰自动购买成功**
+   - **型号**: 锐驰-4C8G
+   
+   **通知时间**：2025-07-25 21:16:30
+   ```
 
-**通知时间**：2025-07-24 10:31:15
-```
+### Anti-Repurchase Mechanism
+
+The bot uses a file-based lock mechanism to prevent duplicate purchases:
+
+- **Lock file**: `~/lhbot-bought.lock`
+- **Purpose**: Persists purchase state across service restarts
+- **Behavior**: Once created, the bot will skip auto-purchase even after restart
 
 ## ⚙️ Configuration Files
 
@@ -165,11 +194,17 @@ Key configurations:
 - **EnvironmentFile**: `~/.config/lhbot.env`
 - **ExecStart**: `~/.local/bin/lhbot`
 - **Restart**: Auto-restart on failure (max 3 times in 30 seconds)
-- **Logging**: Output to `/var/log/lhbot.log`
+- **Logging**: Output `/var/log/lhbot.log`
 
 ## 🔍 Troubleshooting
 
 ### Common Issues
+
+**Service stops after logout:**
+```bash
+# Enable linger to keep user services running
+loginctl enable-linger $USER
+```
 
 **Service won't start:**
 ```bash
@@ -204,11 +239,15 @@ source ~/.config/lhbot.env
 - Never commit API credentials to version control
 - Use environment variables for sensitive configuration
 - Regularly rotate Tencent Cloud API keys
-- Monitor `/var/log/lhbot.log` for security events
+- Monitor logs for security events: `journalctl --user -u lhbot.service` OR `tail -f /var/log/lhbot.log`
 
-## 📄 License
+## 📄 Recent Updates
 
-This project is open source. Please review the license file for details.
+### v1.1.0 (2025-07-25)
+- **Enhanced notification logic**: Immediate notifications for stock availability with @kaireewu mention
+- **Anti-repurchase protection**: File-based lock mechanism prevents duplicate purchases after service restart
+- **Improved error handling**: Better logging for CreateInstances API failures
+- **User systemd service fix**: Added `loginctl enable-linger` requirement for persistent user services
 
 ## 🤝 Contributing
 

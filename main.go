@@ -22,14 +22,15 @@ import (
 )
 
 var (
-	bought       = false
-	purchasing   = false
-	lastNotify   = time.Now().Add(-24 * time.Hour)
-	chatID       = os.Getenv("CHAT_ID")
-	webhook      = os.Getenv("WEBHOOK")
-	clientID     = os.Getenv("CLIENT_ID")
-	clientSecret = os.Getenv("CLIENT_SECRET")
-	bundles      = []string{"bundle_rs_nmc_lin_med1_02", "bundle_rs_nmc_lin_med2_01"}
+	bought         = false
+	purchasing     = false
+	lastNotify     = time.Now().Add(-24 * time.Hour)
+	chatID         = os.Getenv("CHAT_ID")
+	webhook        = os.Getenv("WEBHOOK")
+	clientID       = os.Getenv("CLIENT_ID")
+	clientSecret   = os.Getenv("CLIENT_SECRET")
+	bundles        = []string{"bundle_rs_nmc_lin_med1_02", "bundle_rs_nmc_lin_med2_01"}
+	enablePurchase = false
 )
 
 func createClient() *common.Client {
@@ -68,11 +69,14 @@ func main() {
 		log.Fatal("chat id or webhook env required")
 	}
 
-	// 检查是否已购买过
-	lockFile := getLockFilePath()
-	if _, err := os.Stat(lockFile); err == nil {
-		bought = true
-		log.Println("检测到已购买标记，跳过自动购买")
+	enablePurchase = os.Getenv("ENABLE_PURCHASE") == "1"
+	if enablePurchase {
+		// 检查是否已购买过
+		lockFile := getLockFilePath()
+		if _, err := os.Stat(lockFile); err == nil {
+			bought = true
+			log.Println("检测到已购买标记，跳过自动购买")
+		}
 	}
 
 	rawBundles, exists := os.LookupEnv("BUNDLES")
@@ -148,7 +152,7 @@ func queryBundles(ctx context.Context) {
 		bundles[key] = bundle.BundleSalesState
 		if bundle.BundleSalesState == "AVAILABLE" {
 			hasAvailable = true
-			if !bought && !purchasing {
+			if enablePurchase && !bought && !purchasing {
 				go createInstance(bundle)
 				break
 			}
@@ -177,8 +181,8 @@ func createInstance(bundle Bundle) {
 		rootPassword = "admin@2025"
 	}
 	params := map[string]any{
-		"BundleId":      bundle.BundleID,
-		"BlueprintId":   "lhbp-mxml4cnq", // Debian 12
+		"BundleId":      "bundle_rs_nmc_lin_med1_02", // 香港锐驰 2C2G 55元套餐
+		"BlueprintId":   "lhbp-mxml4cnq",             // Debian 12
 		"InstanceCount": 1,
 		"InstanceChargePrepaid": map[string]any{
 			"Period":    1,

@@ -126,7 +126,7 @@ func queryBundles(ctx context.Context) {
 		if bundle.BundleSalesState == "AVAILABLE" {
 			hasAvailable = true
 			if !bought && !purchasing {
-				createInstance(bundle)
+				go createInstance(bundle)
 				break
 			}
 		}
@@ -154,7 +154,6 @@ func createInstance(bundle Bundle) {
 		rootPassword = "admin@2025"
 	}
 	params := map[string]any{
-		"Region":        "ap-hongkong",
 		"BundleId":      bundle.BundleID,
 		"BlueprintId":   "lhbp-mxml4cnq", // Debian 12
 		"InstanceCount": 1,
@@ -283,17 +282,13 @@ func notifyWithMention(bundles map[string]string) {
 	userid := os.Getenv("MENTIONED_USERID")
 	if userid != "" {
 		payload["markdown"] = map[string]any{
-			"markdown": map[string]any{
-				"content":        markdownContent,
-				"mentioned_list": []string{userid},
-			},
+			"content":        markdownContent,
+			"mentioned_list": []string{userid},
 		}
 	} else {
 		payload["markdown"] = map[string]any{
-			"markdown": map[string]any{
-				"content":        markdownContent,
-				"mentioned_list": []string{"@all"},
-			},
+			"content":        markdownContent,
+			"mentioned_list": []string{"@all"},
 		}
 	}
 	body, _ := sonic.Marshal(payload)

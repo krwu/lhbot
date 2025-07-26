@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -28,6 +29,7 @@ var (
 	webhook      = os.Getenv("WEBHOOK")
 	clientID     = os.Getenv("CLIENT_ID")
 	clientSecret = os.Getenv("CLIENT_SECRET")
+	bundles      = []string{"bundle_rs_nmc_lin_med1_02", "bundle_rs_nmc_lin_med2_01"}
 )
 
 func createClient() *common.Client {
@@ -73,6 +75,21 @@ func main() {
 		log.Println("检测到已购买标记，跳过自动购买")
 	}
 
+	rawBundles, exists := os.LookupEnv("BUNDLES")
+	if exists {
+		_bundles := strings.Split(rawBundles, ",")
+		bundles = make([]string, 0, len(_bundles))
+		for _, b := range _bundles {
+			v := strings.TrimSpace(b)
+			if v != "" {
+				bundles = append(bundles, v)
+			}
+		}
+	}
+	if len(bundles) == 0 {
+		log.Println("没有需要监控的套餐，自动退出")
+		return
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	// graceful shutdown
 	sig := make(chan os.Signal, 1)
@@ -97,7 +114,13 @@ func main() {
 func queryBundles(ctx context.Context) {
 	client := createClient()
 	request := tchttp.NewCommonRequest("lighthouse", "2020-03-24", "DescribeBundles")
-	params := "{\"BundleIds\":[\"bundle_rs_nmc_lin_med1_02\",\"bundle_rs_nmc_lin_med2_01\"]}"
+	if len(bundles) == 0 {
+		log.Printf("没有要监控的套餐，自动退出：%+v\n", bundles)
+		return
+	}
+	params := map[string]any{
+		"BundleIds": bundles,
+	}
 
 	err := request.SetActionParameters(params)
 	if err != nil {
